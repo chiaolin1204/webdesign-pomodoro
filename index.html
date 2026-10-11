@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄鐘專案測試</title>
+</head>
+<body>
+    <h1>番茄鐘專注計時器</h1>
+
+    <!-- 倒數計時與控制區 -->
+    <div id="timer-display">25:00</div>
+    <button id="start-btn">開始</button>
+    <button id="pause-btn">暫停</button>
+    <button id="reset-btn">重置</button>
+  
+    <!-- 待辦任務區 -->
+    <div style="margin-top: 20px;">
+        <input type="text" id="task-input" placeholder="請輸入欲完成的任務...">
+        <button id="add-task-btn">新增任務</button>
+    </div>
+    
+    <h3>待辦任務列表：</h3>
+    <ul id="task-list"></ul>
+
+    <!-- 專注紀錄區 -->
+    <h3>歷史專注紀錄：</h3>
+    <ul id="record-list"></ul>
+
+    <!-- 連結 JS 檔 -->
+    <script src="tomoto.js"></script>
+</body>
+</html>
