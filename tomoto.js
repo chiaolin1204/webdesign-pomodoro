@@ -12,8 +12,9 @@ const recordList = document.getElementById('record-list');
 let totalSeconds = 25 * 60; // 25分鐘 = 1500秒
 let timerId = null;         // 計時器 ID
 let isRunning = false;      // 是否正在倒數
+let targetTime = null;      // 記錄結束時間點（解決背景計時）
 
-// 讀取 localStorage 內的資料（確保重新整理後資料還在）
+// 讀取 localStorage 內的資料
 let tasks = JSON.parse(localStorage.getItem('pomodoro_tasks')) || [];
 let records = JSON.parse(localStorage.getItem('pomodoro_records')) || [];
 
@@ -41,7 +42,7 @@ addTaskBtn.addEventListener('click', () => {
 
     tasks.push(newTask);
     saveAndRenderTasks();
-    taskInput.value = ''; // 清空輸入框
+    taskInput.value = '';
 });
 
 function saveAndRenderTasks() {
@@ -50,6 +51,7 @@ function saveAndRenderTasks() {
 }
 
 function renderTasks() {
+    if (!taskList) return;
     taskList.innerHTML = '';
     tasks.forEach(task => {
         const li = document.createElement('li');
@@ -62,7 +64,6 @@ function renderTasks() {
     });
 }
 
-// 全域函式供 HTML 的 onclick 呼叫
 window.toggleTask = function(id) {
     tasks = tasks.map(task => task.id === id ? { ...task, completed: !task.completed } : task);
     saveAndRenderTasks();
@@ -75,26 +76,32 @@ window.deleteTask = function(id) {
 
 
 // ==========================================
-// 功能二：25分鐘倒數計時與暫停、重置
+// 功能二：支援背景計時的 25 分鐘倒數
 // ==========================================
 startBtn.addEventListener('click', () => {
-    if (isRunning) return; // 避免重複點擊加速
+    if (isRunning) return; 
     isRunning = true;
 
+    // 計算絕對結束時間點
+    targetTime = Date.now() + totalSeconds * 1000;
+
     timerId = setInterval(() => {
+        const now = Date.now();
+        const remainingMs = targetTime - now;
+        totalSeconds = Math.ceil(remainingMs / 1000);
+
         if (totalSeconds > 0) {
-            totalSeconds--;
             updateTimerDisplay();
         } else {
             // 倒數結束
             clearInterval(timerId);
             isRunning = false;
+            totalSeconds = 0;
+            updateTimerDisplay();
             
-            // 觸發功能三：寫入專注紀錄
             addRecord("完成了一次 25 分鐘專注");
             alert('恭喜完成 25 分鐘專注！已為您寫入紀錄。');
 
-            // 重置時間
             totalSeconds = 25 * 60;
             updateTimerDisplay();
         }
@@ -114,14 +121,16 @@ resetBtn.addEventListener('click', () => {
 });
 
 function updateTimerDisplay() {
+    if (totalSeconds < 0) totalSeconds = 0;
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     
-    // 格式化補零 (例如 05:09)
     const formattedMinutes = String(minutes).padStart(2, '0');
     const formattedSeconds = String(seconds).padStart(2, '0');
     
-    timerDisplay.innerText = `${formattedMinutes}:${formattedSeconds}`;
+    if (timerDisplay) {
+        timerDisplay.innerText = `${formattedMinutes}:${formattedSeconds}`;
+    }
 }
 
 
@@ -137,12 +146,13 @@ function addRecord(content) {
         time: timeString
     };
 
-    records.unshift(newRecord); // 將最新紀錄排在最上方
+    records.unshift(newRecord);
     localStorage.setItem('pomodoro_records', JSON.stringify(records));
     renderRecords();
 }
 
 function renderRecords() {
+    if (!recordList) return;
     recordList.innerHTML = '';
     records.forEach(record => {
         const li = document.createElement('li');
