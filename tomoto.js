@@ -185,6 +185,25 @@ document.querySelectorAll('.shop-item').forEach((item, index) => {
             localStorage.setItem('pomodoro_unlocked', JSON.stringify(unlockedItems));
             alert('購買成功！快去幫角色換上吧！');
             item.style.borderColor = 'var(--primary)';
+            
         }
     });
 });
+// ==========================================
+// 6. 換裝系統邏輯 (SVG 紙娃切換)
+// ==========================================
+function changeOutfit(targetOutfitId) {
+    const allOutfits = ['dresstest', 'dresstest2'];
+    
+    allOutfits.forEach(outfitId => {
+        const outfitLayers = document.querySelectorAll(`[id="${outfitId}"]`);
+        
+        outfitLayers.forEach(layer => {
+            if (outfitId === targetOutfitId) {
+                layer.style.display = 'block';
+            } else {
+                layer.style.display = 'none';
+            }
+        });
+    });
+}
