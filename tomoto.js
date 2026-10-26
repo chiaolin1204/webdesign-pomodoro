@@ -1,31 +1,119 @@
-// --- 1. 抓取 HTML 元素 ---
+// ==========================================
+// 1. DOM 元素與全域變數抓取
+// ==========================================
 const timerDisplay = document.getElementById('timer-display');
 const startBtn = document.getElementById('start-btn');
-const pauseBtn = document.getElementById('pause-btn');
 const resetBtn = document.getElementById('reset-btn');
 const taskInput = document.getElementById('task-input');
 const addTaskBtn = document.getElementById('add-task-btn');
 const taskList = document.getElementById('task-list');
-const recordList = document.getElementById('record-list');
+const coinValueEls = document.querySelectorAll('.coin-value'); // 抓取畫面上的金幣顯示（可能有多處）
 
-// --- 2. 狀態變數設定 ---
-let totalSeconds = 25 * 60; // 25分鐘 = 1500秒
-let timerId = null;         // 計時器 ID
-let isRunning = false;      // 是否正在倒數
-let targetTime = null;      // 記錄結束時間點（解決背景計時）
+// 計時器相關狀態
+let totalSeconds = 25 * 60; // 預設 25 分鐘
+let timerId = null;
+let isRunning = false;
+let targetTime = null;
 
-// 讀取 localStorage 內的資料
+// 資料持久化 (localStorage)
+let coins = parseInt(localStorage.getItem('pomodoro_coins')) || 120; // 預設 120 金幣
 let tasks = JSON.parse(localStorage.getItem('pomodoro_tasks')) || [];
-let records = JSON.parse(localStorage.getItem('pomodoro_records')) || [];
+let unlockedItems = JSON.parse(localStorage.getItem('pomodoro_unlocked')) || []; // 已購買的商品
 
-// 初始化：畫面載入時先渲染一次清單與紀錄
+// 初始化渲染
+updateCoinDisplay();
 renderTasks();
-renderRecords();
 updateTimerDisplay();
 
 
 // ==========================================
-// 功能一：新增與顯示待辦任務
+// 2. 金幣系統管理
+// ==========================================
+function addCoins(amount) {
+    coins += amount;
+    localStorage.setItem('pomodoro_coins', coins);
+    updateCoinDisplay();
+}
+
+function deductCoins(amount) {
+    if (coins >= amount) {
+        coins -= amount;
+        localStorage.setItem('pomodoro_coins', coins);
+        updateCoinDisplay();
+        return true;
+    }
+    alert('金幣不足！');
+    return false;
+}
+
+function updateCoinDisplay() {
+    coinValueEls.forEach(el => {
+        el.innerText = coins;
+    });
+}
+
+
+// ==========================================
+// 3. 25分鐘倒數計時與背景計時（完成賺金幣）
+// ==========================================
+startBtn.addEventListener('click', () => {
+    if (isRunning) return;
+    isRunning = true;
+    startBtn.innerText = "計時中...";
+
+    // 記錄絕對結束時間點（解決切換分頁被瀏覽器暫停的問題）
+    targetTime = Date.now() + totalSeconds * 1000;
+
+    timerId = setInterval(() => {
+        const now = Date.now();
+        const remainingMs = targetTime - now;
+        totalSeconds = Math.ceil(remainingMs / 1000);
+
+        if (totalSeconds > 0) {
+            updateTimerDisplay();
+        } else {
+            // 倒數結束！
+            clearInterval(timerId);
+            isRunning = false;
+            startBtn.innerText = "開始";
+            totalSeconds = 0;
+            updateTimerDisplay();
+
+            // 獎勵機制：完成一次專注送 20 金幣
+            addCoins(20);
+            alert('恭喜完成 25 分鐘專注！獲得 20 金幣獎勵 🎉');
+
+            // 重置時間回 25 分鐘
+            totalSeconds = 25 * 60;
+            updateTimerDisplay();
+        }
+    }, 1000);
+});
+
+resetBtn.addEventListener('click', () => {
+    clearInterval(timerId);
+    isRunning = false;
+    startBtn.innerText = "開始";
+    totalSeconds = 25 * 60;
+    updateTimerDisplay();
+});
+
+function updateTimerDisplay() {
+    if (totalSeconds < 0) totalSeconds = 0;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    const formattedMinutes = String(minutes).padStart(2, '0');
+    const formattedSeconds = String(seconds).padStart(2, '0');
+    
+    if (timerDisplay) {
+        timerDisplay.innerText = `${formattedMinutes}:${formattedSeconds}`;
+    }
+}
+
+
+// ==========================================
+// 4. 待辦清單管理 (對應夥伴的 HTML ID)
 // ==========================================
 addTaskBtn.addEventListener('click', () => {
     const taskText = taskInput.value.trim();
@@ -53,12 +141,17 @@ function saveAndRenderTasks() {
 function renderTasks() {
     if (!taskList) return;
     taskList.innerHTML = '';
+    
     tasks.forEach(task => {
         const li = document.createElement('li');
+        li.className = 'todo-card';
         li.innerHTML = `
-            <span style="${task.completed ? 'text-decoration: line-through; color: gray;' : ''}">${task.text}</span>
-            <button onclick="toggleTask(${task.id})">${task.completed ? '取消完成' : '完成'}</button>
-            <button onclick="deleteTask(${task.id})">刪除</button>
+            <label class="custom-checkbox">
+                <input type="checkbox" ${task.completed ? 'checked' : ''} onclick="toggleTask(${task.id})">
+                <span class="checkmark"></span>
+            </label>
+            <span class="task-text" style="${task.completed ? 'text-decoration: line-through; color: #A8A29E;' : ''}">${task.text}</span>
+            <button onclick="deleteTask(${task.id})" style="margin-left: auto; background: none; border: none; color: #B48989; cursor: pointer; font-size: 16px;"><i class="fa-solid fa-trash"></i></button>
         `;
         taskList.appendChild(li);
     });
@@ -76,87 +169,22 @@ window.deleteTask = function(id) {
 
 
 // ==========================================
-// 功能二：支援背景計時的 25 分鐘倒數
+// 5. 換裝商店購買邏輯預留
 // ==========================================
-startBtn.addEventListener('click', () => {
-    if (isRunning) return; 
-    isRunning = true;
-
-    // 計算絕對結束時間點
-    targetTime = Date.now() + totalSeconds * 1000;
-
-    timerId = setInterval(() => {
-        const now = Date.now();
-        const remainingMs = targetTime - now;
-        totalSeconds = Math.ceil(remainingMs / 1000);
-
-        if (totalSeconds > 0) {
-            updateTimerDisplay();
-        } else {
-            // 倒數結束
-            clearInterval(timerId);
-            isRunning = false;
-            totalSeconds = 0;
-            updateTimerDisplay();
-            
-            addRecord("完成了一次 25 分鐘專注");
-            alert('恭喜完成 25 分鐘專注！已為您寫入紀錄。');
-
-            totalSeconds = 25 * 60;
-            updateTimerDisplay();
+// 夥伴的 HTML 商店格子可以使用類似邏輯繫結點擊事件
+document.querySelectorAll('.shop-item').forEach((item, index) => {
+    item.addEventListener('click', () => {
+        const itemPrice = 50; // 假設每個道具 50 金幣
+        if (unlockedItems.includes(index)) {
+            alert('你已經擁有這個裝飾囉！');
+            return;
         }
-    }, 1000);
-});
-
-pauseBtn.addEventListener('click', () => {
-    clearInterval(timerId);
-    isRunning = false;
-});
-
-resetBtn.addEventListener('click', () => {
-    clearInterval(timerId);
-    isRunning = false;
-    totalSeconds = 25 * 60;
-    updateTimerDisplay();
-});
-
-function updateTimerDisplay() {
-    if (totalSeconds < 0) totalSeconds = 0;
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    
-    const formattedMinutes = String(minutes).padStart(2, '0');
-    const formattedSeconds = String(seconds).padStart(2, '0');
-    
-    if (timerDisplay) {
-        timerDisplay.innerText = `${formattedMinutes}:${formattedSeconds}`;
-    }
-}
-
-
-// ==========================================
-// 功能三：倒數結束後，寫入一筆「專注紀錄」
-// ==========================================
-function addRecord(content) {
-    const now = new Date();
-    const timeString = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    
-    const newRecord = {
-        text: content,
-        time: timeString
-    };
-
-    records.unshift(newRecord);
-    localStorage.setItem('pomodoro_records', JSON.stringify(records));
-    renderRecords();
-}
-
-function renderRecords() {
-    if (!recordList) return;
-    recordList.innerHTML = '';
-    records.forEach(record => {
-        const li = document.createElement('li');
-        li.innerText = `[${record.time}] ${record.text}`;
-        recordList.appendChild(li);
+        
+        if (deductCoins(itemPrice)) {
+            unlockedItems.push(index);
+            localStorage.setItem('pomodoro_unlocked', JSON.stringify(unlockedItems));
+            alert('購買成功！快去幫角色換上吧！');
+            item.style.borderColor = 'var(--primary)';
+        }
     });
-}
+});
