@@ -116,7 +116,9 @@ body {
 .btn-secondary { background-color: var(--card-bg-alt); color: var(--primary); border: 3px solid var(--primary-light); }
 .settings-panel { width: min(530px, 100%); background-color: var(--card-bg-alt); box-shadow: var(--shadow-soft); border-radius: 32px; padding: clamp(14px, 2vh, 22px) clamp(16px, 2.5vw, 30px); display: flex; flex-direction: column; gap: clamp(10px, 1.5vh, 16px); }
 .settings-header { display: flex; justify-content: space-between; align-items: center; }
+.settings-header-actions { display: flex; gap: 8px; }
 .settings-title { color: var(--text-muted); font-size: 18px; font-weight: 700; }
+.btn-custom { background: #FFF; color: var(--primary); border: 1px solid var(--primary-light); border-radius: 50px; padding: 6px 14px; font-weight: 700; cursor: pointer; }
 .btn-apply { background-color: #FAEBD4; color: var(--primary); border: none; border-radius: 50px; padding: 6px 16px; font-weight: 700; cursor: pointer; }
 .settings-cards { display: flex; gap: 15px; }
 .setting-card { flex: 1; background-color: var(--bg-color); border-radius: 18px; padding: 15px 0; display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -428,6 +430,11 @@ body {
     height: 50px;
 }
 
+.shop-item-preview-empty {
+    border: 1px dashed #D8C8B8;
+    border-radius: 6px;
+}
+
 .shop-thumb-layer {
     position: absolute;
     top: 0;
@@ -556,6 +563,51 @@ body {
     border-color: var(--primary-light);
     background: #FFF;
     color: var(--text-muted);
+}
+
+.custom-timer-dialog {
+    width: min(380px, calc(100vw - 32px));
+    margin: auto;
+    padding: 24px;
+    border: 0;
+    border-radius: 20px;
+    background: var(--card-bg);
+    color: var(--text-dark);
+    box-shadow: 0 16px 48px rgba(65, 45, 35, 0.24);
+}
+
+.custom-timer-dialog::backdrop {
+    background: rgba(35, 28, 25, 0.45);
+}
+
+.custom-timer-dialog form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.custom-timer-dialog h2 {
+    margin: 0 0 4px;
+    color: var(--primary);
+    font-size: 20px;
+    text-align: center;
+}
+
+.custom-timer-dialog label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 700;
+}
+
+.custom-timer-dialog input {
+    width: 110px;
+    padding: 8px 10px;
+    border: 2px solid var(--primary-light);
+    border-radius: 10px;
+    color: var(--text-dark);
+    font: inherit;
 }
 
 /* 調色 UI 區塊：固定在 Card 底部不重疊 */
@@ -729,6 +781,7 @@ body {
     display: flex; 
     flex-direction: column; 
     gap: 14px; 
+    flex: 1;
 }
 
 .sketch-subject-list.is-empty {
@@ -737,7 +790,7 @@ body {
 }
 
 .sketch-subject-list.is-empty + .harvest-pagination {
-    margin-top: 4px;
+    margin-top: auto;
 }
 
 .harvest-empty {
@@ -810,7 +863,8 @@ body {
     align-items: center;
     justify-content: center;
     gap: 10px;
-    margin-top: 12px;
+    margin-top: auto;
+    padding-top: 12px;
 }
 
 .harvest-pagination button {
