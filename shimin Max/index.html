@@ -107,7 +107,10 @@
                 <div class="settings-panel">
                     <div class="settings-header">
                         <h3 class="settings-title">計時設定</h3>
-                        <button class="btn-apply">套用設定</button>
+                        <div class="settings-header-actions">
+                            <button id="custom-settings-btn" class="btn-custom" type="button">自訂</button>
+                            <button class="btn-apply" type="button">套用設定</button>
+                        </div>
                     </div>
                     <div class="settings-cards">
                         <div class="setting-card">
@@ -323,6 +326,27 @@
             <button id="shop-purchase-no" class="shop-purchase-button shop-purchase-button-secondary" type="button">否</button>
             <button id="shop-purchase-yes" class="shop-purchase-button shop-purchase-button-primary" type="button">是</button>
         </div>
+    </dialog>
+    <dialog id="custom-timer-dialog" class="custom-timer-dialog" aria-labelledby="custom-timer-title">
+        <form id="custom-timer-form">
+            <h2 id="custom-timer-title">自訂計時設定</h2>
+            <label>
+                專注分鐘
+                <input id="custom-work-minutes" type="number" min="1" max="1440" step="1" required>
+            </label>
+            <label>
+                休息分鐘
+                <input id="custom-break-minutes" type="number" min="1" max="1440" step="1" required>
+            </label>
+            <label>
+                番茄數
+                <input id="custom-tomato-count" type="number" min="1" max="99" step="1" required>
+            </label>
+            <div class="shop-purchase-actions">
+                <button id="custom-timer-cancel" class="shop-purchase-button shop-purchase-button-secondary" type="button">取消</button>
+                <button class="shop-purchase-button shop-purchase-button-primary" type="submit">套用</button>
+            </div>
+        </form>
     </dialog>
     <script src="tomoto.js"></script>
     <audio id="alarm-audio" src="running-out-of-time.mp3" preload="auto"></audio>
