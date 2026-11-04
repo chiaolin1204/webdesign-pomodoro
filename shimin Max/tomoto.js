@@ -483,6 +483,50 @@ if (settingCards.length >= 3) {
 }
 
 const applyBtn = document.querySelector('.btn-apply');
+const customSettingsBtn = document.getElementById('custom-settings-btn');
+const customTimerDialog = document.getElementById('custom-timer-dialog');
+const customTimerForm = document.getElementById('custom-timer-form');
+const customWorkMinutesInput = document.getElementById('custom-work-minutes');
+const customBreakMinutesInput = document.getElementById('custom-break-minutes');
+const customTomatoCountInput = document.getElementById('custom-tomato-count');
+
+if (customSettingsBtn && customTimerDialog && customTimerForm) {
+    customSettingsBtn.addEventListener('click', () => {
+        if (isRunning) {
+            alert('計時中無法更改設定，請先重置計時器！');
+            return;
+        }
+
+        customWorkMinutesInput.value = workTimeSetting;
+        customBreakMinutesInput.value = breakTimeSetting;
+        customTomatoCountInput.value = tomatoCountSetting;
+        customTimerDialog.showModal();
+        customWorkMinutesInput.focus();
+    });
+
+    document.getElementById('custom-timer-cancel').addEventListener('click', () => {
+        customTimerDialog.close();
+    });
+
+    customTimerForm.addEventListener('submit', event => {
+        event.preventDefault();
+        if (!customTimerForm.reportValidity()) return;
+
+        workTimeSetting = Number(customWorkMinutesInput.value);
+        breakTimeSetting = Number(customBreakMinutesInput.value);
+        tomatoCountSetting = Number(customTomatoCountInput.value);
+        workValueEl.innerText = workTimeSetting;
+        breakValueEl.innerText = breakTimeSetting;
+        tomatoValueEl.innerText = tomatoCountSetting;
+        totalSeconds = workTimeSetting * 60;
+        remainingTomatoes = tomatoCountSetting;
+        isWorkMode = true;
+        updateTimerDisplay();
+        updateTomatoDisplayUI();
+        customTimerDialog.close();
+    });
+}
+
 if (applyBtn) {
     applyBtn.addEventListener('click', () => {
         if (isRunning) {
@@ -918,6 +962,7 @@ const shopItemsData = [
     { id: 'he_2', category: 'hair_ext', name: '辮髮 02', mask: 'images/avatar/hair_ext_02_mask.png', line: 'images/avatar/hair_ext_02_line.png' },
     { id: 'he_3', category: 'hair_ext', name: '辮髮 03', mask: 'images/avatar/hair_ext_03_mask.png', line: 'images/avatar/hair_ext_03_line.png' },
     { id: 'he_4', category: 'hair_ext', name: '辮髮 04', mask: 'images/avatar/hair_ext_04_mask.png', line: 'images/avatar/hair_ext_04_line.png' },
+    { id: 'he_none', category: 'hair_ext', name: '無', none: true },
 
     // --- 後髮 (hair_back) ---
     { id: 'hb_1', category: 'hair_back', name: '後髮 01', mask: 'images/avatar/hair_back_01_mask.png', line: 'images/avatar/hair_back_01_line.png' },
@@ -927,6 +972,7 @@ const shopItemsData = [
     { id: 'ah_1', category: 'ahoge', name: '呆毛 01', mask: 'images/avatar/ahoge_01_mask.png', line: 'images/avatar/ahoge_01_mask.png' },
     { id: 'ah_2', category: 'ahoge', name: '呆毛 02', mask: 'images/avatar/ahoge_02_mask.png', line: 'images/avatar/ahoge_02_line.png' },
     { id: 'ah_3', category: 'ahoge', name: '呆毛 03', mask: 'images/avatar/ahoge_03_mask.png', line: 'images/avatar/ahoge_03_line.png' },
+    { id: 'ah_none', category: 'ahoge', name: '無', none: true },
 
     // --- 身體 (body) ---
     { id: 'bd_1', category: 'body', name: '身體 01', mask: 'images/avatar/body_01_mask.png', line: 'images/avatar/body_01_line.png' },
@@ -938,6 +984,7 @@ const shopItemsData = [
 
     // --- 外套 (outer) ---
     { id: 'ou_1', category: 'outer', name: '外套 01', mask: 'images/avatar/clothes_outer_01_mask.png', line: 'images/avatar/clothes_outer_01_line.png' },
+    { id: 'ou_none', category: 'outer', name: '無', none: true },
 
     // --- 鞋子 (shoes) ---
     { id: 'sh_1', category: 'shoes', name: '鞋子 01', mask: 'images/avatar/shoes_01_mask.png', line: 'images/avatar/shoes_01_line.png' }
@@ -957,7 +1004,7 @@ const shopItemUnlockPrices = {
     shoes: 5
 };
 const defaultUnlockedShopItems = shopItemsData
-    .filter(item => item.name.endsWith('01'))
+    .filter(item => item.name.endsWith('01') || item.none)
     .map(item => item.id);
 const storedUnlockedShopItems = JSON.parse(localStorage.getItem('pomodoro_unlocked_shop_items') || '[]');
 const unlockedShopItems = [...new Set([
@@ -1011,22 +1058,26 @@ function renderShopGrid(category = 'all') {
         const preview = document.createElement('div');
         preview.className = 'shop-item-preview';
 
-        const maskLayer = document.createElement('div');
-        maskLayer.className = 'shop-thumb-mask';
-        maskLayer.style.backgroundColor = shopColors[item.category];
-        const maskImage = `url("${item.mask}")`;
-        maskLayer.style.maskImage = maskImage;
-        maskLayer.style.setProperty('-webkit-mask-image', maskImage);
-        preview.appendChild(maskLayer);
+        if (item.none) {
+            preview.classList.add('shop-item-preview-empty');
+        } else {
+            const maskLayer = document.createElement('div');
+            maskLayer.className = 'shop-thumb-mask';
+            maskLayer.style.backgroundColor = shopColors[item.category];
+            const maskImage = `url("${item.mask}")`;
+            maskLayer.style.maskImage = maskImage;
+            maskLayer.style.setProperty('-webkit-mask-image', maskImage);
+            preview.appendChild(maskLayer);
 
-        const lineLayer = document.createElement('img');
-        lineLayer.src = item.line;
-        lineLayer.className = 'shop-thumb-layer';
-        lineLayer.alt = `${item.name} line`;
-        if (item.mask === item.line) {
-            lineLayer.classList.add('shop-thumb-original');
+            const lineLayer = document.createElement('img');
+            lineLayer.src = item.line;
+            lineLayer.className = 'shop-thumb-layer';
+            lineLayer.alt = `${item.name} line`;
+            if (item.mask === item.line) {
+                lineLayer.classList.add('shop-thumb-original');
+            }
+            preview.appendChild(lineLayer);
         }
-        preview.appendChild(lineLayer);
         if (showAsLocked) {
             const lockOverlay = document.createElement('span');
             lockOverlay.className = 'shop-item-lock-overlay';
@@ -1113,6 +1164,30 @@ function equipShopItem(container, item) {
     let maskLayer;
     let lineLayer;
 
+    if (item.none) {
+        if (item.category === 'ahoge') {
+            container.querySelectorAll('img.avatar-mask[alt^="ahoge"], img.avatar-line[alt^="ahoge"]')
+                .forEach(layer => {
+                    layer.style.display = 'none';
+                });
+        } else {
+            const layerNames = avatarLayerNames[item.category];
+            if (!layerNames) return;
+            if (layerNames.mask) {
+                maskLayer = container.querySelector(`img.avatar-mask[alt="${layerNames.mask}"]`);
+            }
+            if (layerNames.line) {
+                lineLayer = container.querySelector(`img.avatar-line[alt="${layerNames.line}"]`);
+            }
+            if (maskLayer) maskLayer.style.display = 'none';
+            if (lineLayer) lineLayer.style.display = 'none';
+        }
+
+        const tintLayer = container.querySelector(`.avatar-mask-tint[data-category="${item.category}"]`);
+        if (tintLayer) tintLayer.style.display = 'none';
+        return;
+    }
+
     if (item.category === 'ahoge') {
         const masks = [...container.querySelectorAll('img.avatar-mask[alt^="ahoge"]')];
         const lines = [...container.querySelectorAll('img.avatar-line[alt^="ahoge"]')];
@@ -1136,6 +1211,7 @@ function equipShopItem(container, item) {
     if (!lineLayer) return;
 
     if (maskLayer) {
+        maskLayer.style.display = '';
         maskLayer.src = item.mask;
         maskLayer.style.visibility = 'hidden';
     }
@@ -1147,6 +1223,7 @@ function equipShopItem(container, item) {
         tintLayer.dataset.category = item.category;
         container.appendChild(tintLayer);
     }
+    tintLayer.style.display = '';
 
     const maskImage = `url("${item.mask}")`;
     tintLayer.style.maskImage = maskImage;
