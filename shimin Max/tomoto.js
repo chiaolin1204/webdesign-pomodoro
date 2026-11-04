@@ -289,7 +289,9 @@ function updateTomatoDisplayUI() {
     if (settingCards.length >= 3) {
         const tomatoValueEl = settingCards[2].querySelector('.setting-value');
         if (tomatoValueEl) {
-            tomatoValueEl.innerText = remainingTomatoes;
+            tomatoValueEl.value = remainingTomatoes;
+            tomatoValueEl.readOnly = true;
+            tomatoValueEl.removeAttribute('aria-invalid');
         }
     }
 }
@@ -446,10 +448,18 @@ if (settingCards.length >= 3) {
     const workBtns = settingCards[0].querySelectorAll('.circle-btn');
     if (workBtns.length >= 2) {
         workBtns[0].addEventListener('click', () => {
-            if (workTimeSetting > 1) { workTimeSetting--; workValueEl.innerText = workTimeSetting; }
+            if (workTimeSetting > 1) {
+                workTimeSetting--;
+                workValueEl.value = workTimeSetting;
+                workValueEl.readOnly = true;
+                workValueEl.removeAttribute('aria-invalid');
+            }
         });
         workBtns[1].addEventListener('click', () => {
-            workTimeSetting++; workValueEl.innerText = workTimeSetting;
+            workTimeSetting++;
+            workValueEl.value = workTimeSetting;
+            workValueEl.readOnly = true;
+            workValueEl.removeAttribute('aria-invalid');
         });
     }
 
@@ -457,10 +467,18 @@ if (settingCards.length >= 3) {
     const breakBtns = settingCards[1].querySelectorAll('.circle-btn');
     if (breakBtns.length >= 2) {
         breakBtns[0].addEventListener('click', () => {
-            if (breakTimeSetting > 1) { breakTimeSetting--; breakValueEl.innerText = breakTimeSetting; }
+            if (breakTimeSetting > 1) {
+                breakTimeSetting--;
+                breakValueEl.value = breakTimeSetting;
+                breakValueEl.readOnly = true;
+                breakValueEl.removeAttribute('aria-invalid');
+            }
         });
         breakBtns[1].addEventListener('click', () => {
-            breakTimeSetting++; breakValueEl.innerText = breakTimeSetting;
+            breakTimeSetting++;
+            breakValueEl.value = breakTimeSetting;
+            breakValueEl.readOnly = true;
+            breakValueEl.removeAttribute('aria-invalid');
         });
     }
 
@@ -470,74 +488,77 @@ if (settingCards.length >= 3) {
         tomatoBtns[0].addEventListener('click', () => {
             if (tomatoCountSetting > 1) { 
                 tomatoCountSetting--; 
-                tomatoValueEl.innerText = tomatoCountSetting; 
+                tomatoValueEl.value = tomatoCountSetting;
+                tomatoValueEl.readOnly = true;
+                tomatoValueEl.removeAttribute('aria-invalid');
                 remainingTomatoes = tomatoCountSetting; 
             }
         });
         tomatoBtns[1].addEventListener('click', () => {
             tomatoCountSetting++; 
-            tomatoValueEl.innerText = tomatoCountSetting; 
+            tomatoValueEl.value = tomatoCountSetting;
+            tomatoValueEl.readOnly = true;
+            tomatoValueEl.removeAttribute('aria-invalid');
             remainingTomatoes = tomatoCountSetting; 
         });
     }
 }
 
 const applyBtn = document.querySelector('.btn-apply');
-const customSettingsBtn = document.getElementById('custom-settings-btn');
-const customTimerDialog = document.getElementById('custom-timer-dialog');
-const customTimerForm = document.getElementById('custom-timer-form');
-const customWorkMinutesInput = document.getElementById('custom-work-minutes');
-const customBreakMinutesInput = document.getElementById('custom-break-minutes');
-const customTomatoCountInput = document.getElementById('custom-tomato-count');
+[
+    { element: workValueEl, setValue: value => { workTimeSetting = value; }, max: 1440 },
+    { element: breakValueEl, setValue: value => { breakTimeSetting = value; }, max: 1440 },
+    { element: tomatoValueEl, setValue: value => {
+        tomatoCountSetting = value;
+        remainingTomatoes = value;
+    }, max: 99 }
+].forEach(({ element }) => {
+    if (!element) return;
 
-if (customSettingsBtn && customTimerDialog && customTimerForm) {
-    customSettingsBtn.addEventListener('click', () => {
-        if (isRunning) {
-            alert('計時中無法更改設定，請先重置計時器！');
+    element.addEventListener('input', () => {
+        element.removeAttribute('aria-invalid');
+    });
+    element.addEventListener('dblclick', () => {
+        if (isRunning) return;
+        element.readOnly = false;
+        element.focus();
+        element.select();
+    });
+});
+
+if (applyBtn) {
+    applyBtn.addEventListener('click', () => {
+        if (isRunning) return;
+
+        const settings = [
+            { element: workValueEl, setValue: value => { workTimeSetting = value; }, max: 1440 },
+            { element: breakValueEl, setValue: value => { breakTimeSetting = value; }, max: 1440 },
+            { element: tomatoValueEl, setValue: value => {
+                tomatoCountSetting = value;
+                remainingTomatoes = value;
+            }, max: 99 }
+        ];
+        let invalidElement = null;
+        settings.forEach(({ element, max }) => {
+            const value = element.valueAsNumber;
+            const isValid = Number.isInteger(value) && value >= 1 && value <= max;
+            element.setAttribute('aria-invalid', String(!isValid));
+            if (!isValid && !invalidElement) invalidElement = element;
+        });
+        if (invalidElement) {
+            invalidElement.focus();
             return;
         }
 
-        customWorkMinutesInput.value = workTimeSetting;
-        customBreakMinutesInput.value = breakTimeSetting;
-        customTomatoCountInput.value = tomatoCountSetting;
-        customTimerDialog.showModal();
-        customWorkMinutesInput.focus();
-    });
-
-    document.getElementById('custom-timer-cancel').addEventListener('click', () => {
-        customTimerDialog.close();
-    });
-
-    customTimerForm.addEventListener('submit', event => {
-        event.preventDefault();
-        if (!customTimerForm.reportValidity()) return;
-
-        workTimeSetting = Number(customWorkMinutesInput.value);
-        breakTimeSetting = Number(customBreakMinutesInput.value);
-        tomatoCountSetting = Number(customTomatoCountInput.value);
-        workValueEl.innerText = workTimeSetting;
-        breakValueEl.innerText = breakTimeSetting;
-        tomatoValueEl.innerText = tomatoCountSetting;
+        settings.forEach(({ element, setValue }) => {
+            setValue(element.valueAsNumber);
+            element.readOnly = true;
+        });
         totalSeconds = workTimeSetting * 60;
         remainingTomatoes = tomatoCountSetting;
         isWorkMode = true;
         updateTimerDisplay();
         updateTomatoDisplayUI();
-        customTimerDialog.close();
-    });
-}
-
-if (applyBtn) {
-    applyBtn.addEventListener('click', () => {
-        if (isRunning) {
-            alert('計時中無法更改設定，請先重置計時器！');
-            return;
-        }
-        totalSeconds = workTimeSetting * 60;
-        remainingTomatoes = tomatoCountSetting;
-        isWorkMode = true;
-        updateTimerDisplay();
-        alert(`設定已套用！\n專注：${workTimeSetting} 分鐘\n休息：${breakTimeSetting} 分鐘\n總番茄數：${tomatoCountSetting} 輪`);
     });
 }
 
